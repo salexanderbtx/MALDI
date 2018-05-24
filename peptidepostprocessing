@@ -1,0 +1,208 @@
+rm(list=ls(all=TRUE))
+detach(PeptideDat)
+
+PeptideDat <- read.table("/Users/tmcmurry/Documents/Consulting/Bioinformatics Project/simplelarge_commas_removed.csv", header=TRUE, sep=",", na.strings="Err:521")
+attach(PeptideDat)
+						
+conflevel <- 0.95		#The confidence level for the intervals.  Typical values are .90, .95, .99
+						#.95 means that roughly 95 percent of all intervals constructed this
+						#way will contain the true mean
+						#The closer this number gets to 1, the bigger the intervals get
+						
+residlim <-.3			#Y-scale for the residual plots
+
+sdmatrix <- matrix(0,nrow=3, ncol=20)
+
+pepNames <- c("PKT","ADA", "MHR", "RRL", "FHD", "TST", "ADE")
+sgnNames <- c("POS", "NEG")
+matNames <- levels(Matrix)
+colors <- character(length(Matrix))
+colors[Matrix=="CHCA"] <- "red" 	#These allow one to choose the 
+colors[Matrix=="DHB"]  <- "blue"	#plotting colors for the 
+colors[Matrix=="THAP"] <- "orange"	#various matrices
+
+#The plot is a 2x7 grid of subplots.  The top row is the positives
+#the second is the negatives.  The columns are the peptides in 
+#alphabetical order.  Each subplot shows data for every matrix on
+#which the peptide was tested.
+
+par(mfrow = c(2,7), mar = c(3,2,2,0))
+
+for (sgn in 1:2 )
+{	
+	for (pep in 1:7) 
+	{
+
+		plot(0,0,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",main=pep, type="n")		
+		for (q in 1:3)
+		{
+		mat=matNames[q]
+			#First select the right x's and y's
+			#separating by matrix
+		xsub <- x[Peptide == pepNames[pep] & 
+#			Scientist == Sci & Experiment == Expt &
+			pos_or_neg == sgnNames[sgn]&
+			Matrix == mat]/100
+		ysub <- y[Peptide == pepNames[pep] & 
+#			Scientist == Sci & 
+#			Experiment == Expt &
+			pos_or_neg == sgnNames[sgn]&
+			Matrix == mat]/100
+			
+		xsub <- xsub[!is.na(ysub)]
+		ysub <- ysub[!is.na(ysub)]
+
+		#Assign colors based on the matrix
+		plotcolors <- colors[Peptide == pepNames[pep] & 
+#			Scientist == Sci & Experiment == Expt & 
+			pos_or_neg == sgnNames[sgn] &
+			Matrix == mat]
+		
+
+		#This section deals with averages and standard deviations
+		byknowns <- split(ysub,xsub)
+
+		devs <- double(length(byknowns))
+		for (i in 1:length(byknowns))
+		{
+			devs[i] <- sd(byknowns[[i]],na.rm=T)
+		}
+				
+		aves <- double(length(byknowns))
+		for (i in 1:length(byknowns))
+		{
+			aves[i] <- mean(byknowns[[i]],na.rm=T)
+		}
+		
+		npoints <- integer(length(byknowns))
+		for (i in 1:length(byknowns))
+		{
+			npoints[i] <- sum(!is.na(byknowns[[i]]))
+		}
+		
+		intervals<-as.numeric(levels(factor(xsub)))
+	
+		
+		
+		wts <- rep(1, length(xsub))		
+
+		fit.nls <- nls(ysub ~ xsub/((1-xsub)*gamma + xsub),
+			start = list(gamma = 1),
+			weights = wts)
+			gam <- coef(fit.nls)[[1]]
+	
+		fittedxs <- seq(0,1,.01)
+		fittedys <- fittedxs/((1-fittedxs)*gam + fittedxs)
+		
+		lines(fittedxs, fittedys, col=plotcolors[1])
+#		abline(0,1)
+
+		
+		#Plot the confidence intervals
+		for (j in 1:length(byknowns))
+		{
+			tmult <- -qt( (1-conflevel)/2, df = (npoints[j]-1) )/sqrt(npoints[j])
+			arrows(intervals[j],aves[j]+tmult*devs[j],intervals[j],aves[j]-tmult*devs[j],
+				length=.05, angle=90,code=3,col=plotcolors[1])
+		}
+		
+		}
+	
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+quartz()
+par(mfrow = c(2,7), mar = c(3,2,2,0))
+
+for (sgn in 1:2 )
+{	
+	for (pep in 1:7) 
+	{
+
+		plot(0,0,xlim=c(0,1),ylim=c(-residlim,residlim),xlab="",ylab="",main=pep, type="n")		
+		for (q in 1:3)
+		{
+		mat=matNames[q]
+			#First select the right x's and y's
+			#separating by matrix
+		xsub <- x[Peptide == pepNames[pep] & 
+#			Scientist == Sci & Experiment == Expt &
+			pos_or_neg == sgnNames[sgn]&
+			Matrix == mat]/100
+		ysub <- y[Peptide == pepNames[pep] & 
+#			Scientist == Sci & Experiment == Expt &
+			pos_or_neg == sgnNames[sgn]&
+			Matrix == mat]/100
+			
+		xsub <- xsub[!is.na(ysub)]
+		ysub <- ysub[!is.na(ysub)]
+
+		#Assign colors based on the matrix
+		plotcolors <- colors[Peptide == pepNames[pep] & 
+#			Scientist == Sci & Experiment == Expt & 
+			pos_or_neg == sgnNames[sgn] &
+			Matrix == mat]
+		
+
+		#This section deals with averages and standard deviations
+		byknowns<-split(ysub,xsub)
+
+		devs <- double(length(byknowns))
+		for (i in 1:length(byknowns))
+		{
+			devs[i] <- sd(byknowns[[i]],na.rm=T)
+		}
+				
+		aves <- double(length(byknowns))
+		for (i in 1:length(byknowns))
+		{
+			aves[i] <- mean(byknowns[[i]],na.rm=T)
+		}
+		
+		npoints <- integer(length(byknowns))
+		for (i in 1:length(byknowns))
+		{
+			npoints[i] <- sum(!is.na(byknowns[[i]]))
+		}
+		
+		intervals<-as.numeric(levels(factor(xsub)))
+	
+		
+		
+		#this is the modeling section done by Tim
+		wts <- rep(1, length(xsub))		
+
+		fit.nls <- nls(ysub ~ xsub/((1-xsub)*gamma + xsub),
+			start = list(gamma = 1),
+			weights = wts)
+			gam <- coef(fit.nls)[[1]]
+		
+		points(xsub, residuals(fit.nls), col=plotcolors[1])
+		abline(0,0)
+		
+		}
+	
+	}
+}

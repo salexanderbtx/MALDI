@@ -4,7 +4,7 @@ detach(PeptideDat)
 PeptideDat <- read.table("/Users/tmcmurry/Documents/Consulting/Bioinformatics Project/simplelarge_commas_removed.csv", header=TRUE, sep=",", na.strings="Err:521")
 attach(PeptideDat)
 						
-conflevel <- 0.95		#The confidence level for the intervals.  Typical values are .90, .95, .99
+conflevel <- 0.95		#The confidence level for the intervals.  Typical values are .90, .95, .99.
 						#.95 means that roughly 95 percent of all intervals constructed this
 						#way will contain the true mean
 						#The closer this number gets to 1, the bigger the intervals get
